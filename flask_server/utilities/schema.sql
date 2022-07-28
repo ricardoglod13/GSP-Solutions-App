@@ -31,6 +31,7 @@ CREATE TABLE venta (
     documento_sucursal VARCHAR(20) NOT NULL,
     items TEXT,
     pago_inmediato BOOLEAN NOT NULL,
+    cantidad_pagada FLOAT NOT NULL DEFAULT 0.00,
     total FLOAT,
     fecha TEXT NOT NULL
 );
@@ -47,11 +48,12 @@ CREATE TABLE compra (
     fecha TEXT NOT NULL
 );
 
-DROP TABLE IF EXISTS abono;
+DROP TABLE IF EXISTS pago;
 
-CREATE TABLE abono (
+CREATE TABLE pago (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    documento_contacto VARCHAR(15) NOT NULL,
+    id_origen INTEGER NOT NULL,
+    origen VARCHAR(15) NOT NULL,
     cant_abono FLOAT NOT NULL,
     fecha TEXT NOT NULL
 );

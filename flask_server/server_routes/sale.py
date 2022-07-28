@@ -1,34 +1,37 @@
 from flask import request, jsonify
 from flask_cors import CORS
 from utilities.functions import *
-from __init__ import routes
+from utilities.db_queries import db_queries
+from __init__ import flask_routes
 import datetime
 
 #=============== Sales ===============#
 
-@routes.route('/sales', methods=['POST'])
+@flask_routes.route('/sales', methods=['POST'])
 def createSale():
     sale = request.json
     date = datetime.datetime.now()
-    query = f"""INSERT INTO venta (documento_contacto, documento_sucursal, items, pago_inmediato, total, fecha) 
-            VALUES ("{sale["documento_contacto"]}", "{sale["documento_sucursal"]}", "[]", {sale["pago_inmediato"]}, 
-            0.0, "{date.strftime("%Y/%m/%d")}");"""
-    get_db_connection(query)
-    return f'Venta creada'
+    db_queries('insert', 'venta', 
+        documento_contacto = f"""{sale["documento_contacto"]}""",
+        documento_sucursal = f"""{sale["documento_sucursal"]}""", 
+        items = f"""[]""", 
+        pago_inmediato = sale["pago_inmediato"], 
+        total = 0.0, 
+        fecha = f"""{date.strftime("%Y/%m/%d")}"""
+    )
+    return 'Venta creada'
 
-@routes.route('/sales/<code>/<cant>/<id_sale>', methods=['POST'])
+@flask_routes.route('/sales/<code>/<cant>/<id_sale>', methods=['POST'])
 def addItems(code, cant, id_sale):
     new_data_sale = []
     aux = 0
 
     #============== Seleccionando el producto ===============#
-    query = f"""SELECT * FROM producto WHERE codigo = "{code}";"""
-    data_product = get_db_connection(query,op=False)
+    data_product = db_queries('select', 'producto', where='codigo', where_value=code)
     res_product = json_sale_product(data_product, cant)
 
     #=============== Verificando si la venta ya tiene items agregados ===============#
-    query = f"""SELECT items FROM venta WHERE id = {id_sale};"""
-    data_sale = get_db_connection(query, op=False)
+    data_sale = db_queries('select', 'venta', fields=['items'], where='id', where_value=id_sale)
     if data_sale != ('[]',):
         new_data_sale = eval(data_sale[0])
 
@@ -53,28 +56,25 @@ def addItems(code, cant, id_sale):
             return f'No hay suficiente stock del {code} para satisfacer la demanda'
 
     #=============== Actualizando la venta con el nuevo item ===============#
-    query = f"""UPDATE venta SET items = "{new_data_sale}" WHERE id = {id_sale};"""
-    get_db_connection(query)
+    db_queries('update', 'venta', items=f"""{new_data_sale}""", where='id', where_value=id_sale)
 
     #=============== Actualizando total de la venta ===============#
     updateTotalVenta(id_sale)
     return f'El Producto {code} fue Agregado a la Venta!'
 
-@routes.route('/sales', methods=['GET'])
+@flask_routes.route('/sales', methods=['GET'])
 def getSale():
-    query = f"SELECT * FROM venta;"
-    data = get_db_connection(query, op=True)
+    data = db_queries('select', 'venta')
     res = json_sale(data)
     return jsonify(res)
 
-@routes.route('/sale/<id>', methods=['GET'])
+@flask_routes.route('/sale/<id>', methods=['GET'])
 def getOneSale(id):
-    query = f"SELECT * FROM venta WHERE id = {id};"
-    data = get_db_connection(query, op=False)
+    data = db_queries('select', 'venta', where='id', where_value=id)
     res = json_sale(data)
     return jsonify(res)
 
-@routes.route('/sales/<id>', methods=['DELETE'])
+@flask_routes.route('/sales/<id>', methods=['DELETE'])
 def deleteSale(id):
     #=============== Aumentando el inventario con las cantidades eliminadas ===============#
     query = f"""SELECT items FROM venta WHERE id = {id};"""
@@ -94,7 +94,7 @@ def deleteSale(id):
     get_db_connection(query)
     return f'Venta #{id} Eliminada'
 
-@routes.route('/sales/<code>/<id_sale>', methods=['DELETE'])
+@flask_routes.route('/sales/<code>/<id_sale>', methods=['DELETE'])
 def deleteItems(code, id_sale):
     #=============== Verificando si la venta ya tiene items agregados ===============#
     query = f"""SELECT items FROM venta WHERE id = {id_sale};"""
@@ -118,7 +118,7 @@ def deleteItems(code, id_sale):
         return f'No se ha encontrado el {code} que desea eliminar'
     return f'No hay ningun producto para eliminar'
 
-@routes.route('/sales/<id>', methods=['PUT'])
+@flask_routes.route('/sales/<id>', methods=['PUT'])
 def updateSale(id):
     sale = request.json
     query = f"SELECT * FROM venta WHERE id = {id};"
@@ -139,7 +139,7 @@ def updateSale(id):
 
     return f'Venta #{id} Actualizada'
 
-@routes.route('/sales/<code>/<cant>/<id_sale>', methods=['PUT'])
+@flask_routes.route('/sales/<code>/<cant>/<id_sale>', methods=['PUT'])
 def updateItem(code, cant, id_sale):
     #=============== Verificando si la venta ya tiene items agregados ===============#
     query = f"""SELECT items FROM venta WHERE id = {id_sale};"""

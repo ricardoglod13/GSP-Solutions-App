@@ -2,11 +2,13 @@ from time import strftime
 from flask import Flask
 from flask_cors import CORS
 from utilities.init_db import *
-from __init__ import routes
+from __init__ import flask_routes
 
 app = Flask(__name__)
 
-app.register_blueprint(routes)
+app.register_blueprint(flask_routes)
+
+CORS(app)
 
 #=============== Vaciando Base de Datos ===============#
 
