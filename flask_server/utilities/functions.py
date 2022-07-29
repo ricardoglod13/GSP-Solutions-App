@@ -1,20 +1,4 @@
-import sqlite3
-
-def get_db_connection(query, **kwargs):
-    con = sqlite3.connect('database.db')
-    cur = con.cursor()
-    cur.execute(f'{query}') 
-    con.commit()
-    if query[0:6] != "SELECT":
-        con.close()
-    elif kwargs.get('op'):
-        data = cur.fetchall()
-        con.close()
-        return (data)
-    elif not kwargs.get('op'):
-        data = cur.fetchone()
-        con.close()
-        return (data)
+from .db_queries import db_queries
 
 def json_product(data):
     tipo = isinstance(data, list)
@@ -82,17 +66,19 @@ def json_payment(data):
             for tupla in data:
                 payments.append({
                     "id": tupla[0],
-                    "documento_contacto":tupla[1],
-                    "cant_abono": tupla[2],
-                    "fecha": tupla[3]
+                    "id_origen":tupla[1],
+                    "origen": tupla[2],
+                    "cant_abono": tupla[3],
+                    "fecha": tupla[4]
                 })
             return payments
 
         payment = {
                 "id": data[0],
-                "documento_contacto":data[1],
-                "cant_abono": data[2],
-                "fecha": data[3]
+                "id_origen":data[1],
+                "origen": data[2],
+                "cant_abono": data[3],
+                "fecha": data[4]
             }
         return payment
 
@@ -113,8 +99,9 @@ def json_sale(data):
                     "documento_sucursal": tupla[2],
                     "items": tupla[3],
                     "pago_inmediato": tupla[4],
+                    "cantidad_pagada": tupla[5],
                     "total": total,
-                    "fecha": tupla[6]
+                    "fecha": tupla[7]
                 })
             return sales
 
@@ -127,8 +114,9 @@ def json_sale(data):
                 "documento_sucursal": data[2],
                 "items": data[3],
                 "pago_inmediato": data[4],
+                "cantidad_pagada": data[5],
                 "total": total,
-                "fecha": data[6]
+                "fecha": data[7]
             }
         return sale
 
@@ -147,35 +135,35 @@ def json_sale_product(data, cant):
 
 def updateTotalVenta(id):
     #=============== Obteniendo la venta donde se debe carcular el total ===============#
-    query = f"SELECT * FROM venta WHERE id = {id};"
-    data = get_db_connection(query, op=False)
+    data = db_queries('select', 'venta', where='id', where_value=id, fields=['*'], fetch=0)
     res = json_sale(data)
 
     #================ Actualizando el total de la venta ===============#
-    query = f"""UPDATE venta SET total = {res["total"]} WHERE id = {id};"""
-    get_db_connection(query)
+    db_queries('update', 'venta', where='id', where_value=id,
+        total= res["total"]
+    )
 
     #================ Actualizando la deuda_contra y deuda_favor de el cliente y la sucursal ===============#
     updateDeudaVenta(res["documento_contacto"], res["documento_sucursal"])
 
 def updateDeudaVenta(documento, documento_sucursal):
     #=============== Obteniendo el total de todas las compras ===============#
-    query = f"""SELECT * FROM venta WHERE documento_contacto = "{documento}";"""
-    data_total = get_db_connection(query, op=True)
+    data_total = db_queries('select', 'venta', where='documento_contacto', where_value=documento, fields=['*'], fetch=1)
     deuda_total = calculateTotal(data_total)
 
     #=============== Actualizando la deuda del contacto con las compras que no hayan sido pago inmediato ===============#
-    query = f"""UPDATE contacto SET deuda_contra = {deuda_total} WHERE documento = "{documento}";"""
-    get_db_connection(query)
+    db_queries('update', 'contacto', where='documento', where_value=documento,
+        deuda_contra= deuda_total
+    )
 
     #=============== Obteniendo el total de todas las ventas ===============#
-    query = f"""SELECT * FROM venta WHERE documento_sucursal = "{documento_sucursal}";"""
-    data_total_sucursal = get_db_connection(query, op=True)
+    data_total_sucursal = db_queries('select', 'venta', where='documento_sucursal', where_value=documento_sucursal, fields=['*'], fetch=1)
     deuda_total_sucursal = calculateTotal(data_total_sucursal)
 
     #=============== Actualizando el total del contacto con las compras que no hayan sido pago inmediato ===============#
-    query = f"""UPDATE contacto SET deuda_favor = {deuda_total_sucursal} WHERE documento = "{documento_sucursal}";"""
-    get_db_connection(query)
+    db_queries('update', 'contacto', where='documento', where_value=documento_sucursal,
+        deuda_favor= deuda_total_sucursal
+    )
 
 def calculateTotal(data):
     deuda = []
@@ -189,6 +177,9 @@ def calculateTotal(data):
                 for dic in products:
                     total = dic["subtotal"] + total
             deuda.append(total) 
+    for val in deuda:
+        print(val) 
+    print(f"""sum={sum(deuda)}""")
 
     deuda_total = sum(deuda)
 
@@ -196,49 +187,49 @@ def calculateTotal(data):
 
 def updateInventory(code, cant, op):
     #=============== Obteniendo la cantidad del producto agregado ===============#
-    query = f"""SELECT cantidad FROM producto WHERE codigo = "{code}";"""
-    data_cant = get_db_connection(query, op=False)
+    data_cant = db_queries('select', 'producto', where='codigo', where_value=code, fields=['cantidad'], fetch=0)
     
     if op:
         if data_cant[0] >= int(cant):
-            query = f"""UPDATE producto SET cantidad = {data_cant[0]-int(cant)} WHERE codigo = "{code}";"""
-            get_db_connection(query)
+            db_queries('update', 'producto', where='codigo', where_value=code, 
+                cantidad= data_cant[0]-int(cant)
+            )
             return True
         return False
     else:
-        query = f"""UPDATE producto SET cantidad = {data_cant[0]+int(cant)} WHERE codigo = "{code}";"""
-        get_db_connection(query)
+        db_queries('update', 'producto', where='codigo', where_value=code, 
+                cantidad= data_cant[0]+int(cant)
+            )
 
 def deleteDeudaVenta(id):
     deuda_contra = 0
 
     #=============== Obteniendo el total de la venta ===============#
-    query = f"SELECT * FROM venta WHERE id = {id};"
-    data_total = get_db_connection(query, op=False)
+    data_total = db_queries('select', 'venta', where='id', where_value=id, fields=['*'], fetch=0)
     res = json_sale(data_total)
 
     #=============== Obteniendo la deuda_contra del contacto que realiza la compra ===============#
-    query = f"""SELECT deuda_contra FROM contacto WHERE documento = "{res["documento_contacto"]}";"""
-    data_deuda_contra = get_db_connection(query, op=False)
+    data_deuda_contra = db_queries('select', 'contacto', where='documento', where_value=res["documento_contacto"], fields=['deuda_contra'], fetch=0)
 
-    deuda_contra = data_deuda_contra[0] - res["total"]
-    
-    query = f"""UPDATE contacto SET deuda_contra = {deuda_contra} WHERE documento = "{res["documento_contacto"]}";"""
-    get_db_connection(query)
+    deuda_contra_value = data_deuda_contra[0] - res["total"]
+
+    db_queries('update', 'contacto', where='documento', where_value=res["documento_contacto"], 
+                deuda_contra= deuda_contra_value
+            )
 
     #=============== Obteniendo la deuda_favor de la sucursal que realiza la venta ===============#
-    query = f"""SELECT deuda_favor FROM contacto WHERE documento = "{res["documento_sucursal"]}";"""
-    data_deuda_sucursal = get_db_connection(query, op=False)
+    data_deuda_sucursal = db_queries('select', 'contacto', where='documento', where_value=res["documento_sucursal"], fields=['deuda_favor'], fetch=0)
 
-    deuda_favor = data_deuda_sucursal[0] - res["total"]
+    deuda_favor_value = data_deuda_sucursal[0] - res["total"]
 
-    query = f"""UPDATE contacto SET deuda_favor = {deuda_favor} WHERE documento = "{res["documento_sucursal"]}";"""
-    get_db_connection(query)
+    db_queries('update', 'contacto', where='documento', where_value=res["documento_sucursal"], 
+                deuda_favor= deuda_favor_value
+            )
 
 def updateAbono(cant_actual, cant_abono, deuda):
     if cant_actual > cant_abono:
         deuda = (cant_actual-cant_abono) + deuda
         return deuda
 
-    deuda = (cant_abono-cant_actual) - deuda
+    deuda = deuda - (cant_abono-cant_actual)
     return deuda

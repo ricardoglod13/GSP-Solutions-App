@@ -1,3 +1,4 @@
+from dataclasses import fields
 from flask import request, jsonify
 from flask_cors import CORS
 from utilities.functions import json_product
@@ -21,13 +22,13 @@ def createProduct():
 
 @flask_routes.route('/products', methods=['GET'])
 def getProduct():
-    data = db_queries('select', 'producto')
+    data = db_queries('select', 'producto', fields=['*'])
     res = json_product(data)
     return jsonify(res)
 
 @flask_routes.route('/product/<id>', methods=['GET'])
 def getOneProduct(id):
-    data = db_queries('select', 'producto', where='id', where_value=id)
+    data = db_queries('select', 'producto', where='id', where_value=id, fields=['*'], fetch=0)
     res = json_product(data)
     return jsonify(res)
 

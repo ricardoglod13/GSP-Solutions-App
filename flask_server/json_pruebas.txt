@@ -20,10 +20,17 @@
 {
     "documento_contacto": "V-6331556",
     "documento_sucursal": "V-29583472",
-    "pago_inmediato": false
+    "pago_inmediato": 0
 }
 
 {
-    "documento_contacto": "V-6331556",
+    "documento_contacto": "V-29583472",
+    "documento_sucursal": "V-6331556",
+    "pago_inmediato": 0
+}
+
+{
+    "id_origen": 2,
+    "origen": "venta",
     "cant_abono": 14
 }

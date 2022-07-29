@@ -15,8 +15,9 @@ def createSale():
         documento_contacto = f"""{sale["documento_contacto"]}""",
         documento_sucursal = f"""{sale["documento_sucursal"]}""", 
         items = f"""[]""", 
-        pago_inmediato = sale["pago_inmediato"], 
-        total = 0.0, 
+        pago_inmediato = sale["pago_inmediato"],
+        cantidad_pagada = 0,
+        total = 0.0,
         fecha = f"""{date.strftime("%Y/%m/%d")}"""
     )
     return 'Venta creada'
@@ -27,11 +28,11 @@ def addItems(code, cant, id_sale):
     aux = 0
 
     #============== Seleccionando el producto ===============#
-    data_product = db_queries('select', 'producto', where='codigo', where_value=code)
+    data_product = db_queries('select', 'producto', where='codigo', where_value=code, fields=['*'], fetch=0)
     res_product = json_sale_product(data_product, cant)
 
     #=============== Verificando si la venta ya tiene items agregados ===============#
-    data_sale = db_queries('select', 'venta', fields=['items'], where='id', where_value=id_sale)
+    data_sale = db_queries('select', 'venta', fields=['items'], where='id', where_value=id_sale, fetch=0)
     if data_sale != ('[]',):
         new_data_sale = eval(data_sale[0])
 
@@ -64,21 +65,20 @@ def addItems(code, cant, id_sale):
 
 @flask_routes.route('/sales', methods=['GET'])
 def getSale():
-    data = db_queries('select', 'venta')
+    data = db_queries('select', 'venta', fields=['*'])
     res = json_sale(data)
     return jsonify(res)
 
 @flask_routes.route('/sale/<id>', methods=['GET'])
 def getOneSale(id):
-    data = db_queries('select', 'venta', where='id', where_value=id)
+    data = db_queries('select', 'venta', where='id', where_value=id, fields=['*'], fetch=0)
     res = json_sale(data)
     return jsonify(res)
 
 @flask_routes.route('/sales/<id>', methods=['DELETE'])
 def deleteSale(id):
     #=============== Aumentando el inventario con las cantidades eliminadas ===============#
-    query = f"""SELECT items FROM venta WHERE id = {id};"""
-    data_sale = get_db_connection(query, op=False)
+    data_sale= db_queries('select', 'venta', where='id', where_value=id, fields=['items'], fetch=0)
 
     if data_sale != ('[]',):
         new_data_sale = eval(data_sale[0])
@@ -90,15 +90,13 @@ def deleteSale(id):
     deleteDeudaVenta(id)
 
     #=============== Eliminando la venta ===============#
-    query = f"DELETE FROM venta WHERE id = {id};"
-    get_db_connection(query)
+    db_queries('delete', 'venta', where='id', where_value=id)
     return f'Venta #{id} Eliminada'
 
 @flask_routes.route('/sales/<code>/<id_sale>', methods=['DELETE'])
 def deleteItems(code, id_sale):
     #=============== Verificando si la venta ya tiene items agregados ===============#
-    query = f"""SELECT items FROM venta WHERE id = {id_sale};"""
-    data_sale = get_db_connection(query, op=False)
+    data_sale = db_queries('select', 'venta', where='id', where_value=id_sale, fields=['items'], fetch=0)
 
     if data_sale != ('[]',):
         new_data_sale = eval(data_sale[0])
@@ -109,8 +107,9 @@ def deleteItems(code, id_sale):
                 new_data_sale.pop(new_data_sale.index(dic))
 
                 #=============== Actualizando la venta sin el item eliminado ===============#
-                query = f"""UPDATE venta SET items = "{new_data_sale}" WHERE id = {id_sale};"""
-                get_db_connection(query)
+                db_queries('update', 'venta', where='id', where_value=id_sale,
+                    items=f"""{new_data_sale}"""
+                )
 
                 #=============== Actualizando total de la venta ===============#
                 updateTotalVenta(id_sale)
@@ -121,14 +120,14 @@ def deleteItems(code, id_sale):
 @flask_routes.route('/sales/<id>', methods=['PUT'])
 def updateSale(id):
     sale = request.json
-    query = f"SELECT * FROM venta WHERE id = {id};"
-    data = get_db_connection(query, op=False)
+    data = db_queries('select', 'venta', where='id', where_value=id, fields=['*'], fetch=0)
     res = json_sale(data)
 
-    query = f"""UPDATE venta SET documento_contacto = "{sale["documento_contacto"]}", 
-            documento_sucursal = "{sale["documento_sucursal"]}", pago_inmediato = {sale["pago_inmediato"]}
-            WHERE id = {id};"""
-    get_db_connection(query)
+    db_queries('update', 'venta', where='id', where_value=id,
+        documento_contacto = f"""{sale["documento_contacto"]}""", 
+        documento_sucursal = f"""{sale["documento_sucursal"]}""", 
+        pago_inmediato = sale["pago_inmediato"]
+    )
 
     if (sale["documento_contacto"] != res["documento_contacto"] 
         or sale["documento_sucursal"] != res["documento_sucursal"] 
@@ -142,8 +141,7 @@ def updateSale(id):
 @flask_routes.route('/sales/<code>/<cant>/<id_sale>', methods=['PUT'])
 def updateItem(code, cant, id_sale):
     #=============== Verificando si la venta ya tiene items agregados ===============#
-    query = f"""SELECT items FROM venta WHERE id = {id_sale};"""
-    data_sale = get_db_connection(query, op=False)
+    data_sale = db_queries('select', 'venta', where='id', where_value=id_sale, fields=['items'], fetch=0)
     
     if data_sale != ('[]',):
         new_data_sale = eval(data_sale[0])
@@ -155,10 +153,12 @@ def updateItem(code, cant, id_sale):
                 dic["subtotal"] = dic["precio_venta"] * dic["cantidad"]
 
             #=============== Actualizando los items de la venta ===============#
-                query = f"""UPDATE venta SET items = "{new_data_sale}" WHERE id = {id_sale};"""
-                get_db_connection(query)
+                db_queries('update', 'venta', where='id', where_value=id_sale,
+                    items = f"""{new_data_sale}"""
+                )
 
             #=============== Actualizando total de la venta ===============#
                 updateTotalVenta(id_sale)
 
                 return f'Item {code} Actualizado'
+            return f'No se encuantra el producto {code}'

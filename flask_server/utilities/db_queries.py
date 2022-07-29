@@ -1,33 +1,36 @@
-from .functions import *
+from .init_db import *
 
 def db_queries(action, table, **kwargs):
+
+    #=============== Resolviendo SELECT sin condicion ===============#
     if action == 'select'and not kwargs.get("where"):
-        query = f"""{action.upper()} * FROM {table};"""
+        fields = multi_kwargs(action, kwargs)
+        query = f"""{action.upper()} {fields} FROM {table};"""
         data = get_db_connection(query, op=True)
         return data
 
-    elif action == 'select' and kwargs.get("where") and not kwargs.get("fields"):
-        where_value = multi_kwargs(action, kwargs)
-        query = f"""{action.upper()} * FROM {table} WHERE {kwargs.get("where")} = {where_value};"""
-        data = get_db_connection(query, op=False)
-        return data
-
-    elif action == 'select' and kwargs.get("where") and kwargs.get("fields"):
+     #=============== Resolviendo SELECT con condicion ===============#
+    elif action == 'select' and kwargs.get("where"):
         arguments = multi_kwargs(action, kwargs)
-        print(arguments)
         query = f"""{action.upper()} {arguments["fields"]} FROM {table} WHERE {kwargs.get("where")} = {arguments["where_value"]};"""
-        data = get_db_connection(query, op=False)
+        if kwargs.get("fetch"):
+            data = get_db_connection(query, op=True)
+        else:
+            data = get_db_connection(query, op=False)
         return data
 
+     #=============== Resolviendo DELETE ===============#
     elif action == 'delete':
         query = f"""{action.upper()} FROM {table} WHERE {kwargs.get("where")} = {kwargs.get("where_value")};"""
         get_db_connection(query)
 
+     #=============== Resolviendo UPDATE ===============#
     elif action == 'update':
         arguments = multi_kwargs(action, kwargs)
         query = f"""{action.upper()} {table} SET {arguments["data"]} WHERE {kwargs.get("where")} = {arguments["where_value"]};"""
         get_db_connection(query)
-            
+
+     #=============== Resolviendo INSERT ===============#            
     elif action == 'insert':
         data = multi_kwargs(action, kwargs)
         query = f"""{action.upper()} INTO {table} ({data[0]}) VALUES ({data[1]});"""
@@ -36,6 +39,7 @@ def db_queries(action, table, **kwargs):
 def multi_kwargs(action, kwargs):
     i = 0
 
+    #=============== Formateando argumentos obtenidos UPDATE ===============#
     if action == 'update':
         data = ""
         for key in kwargs:
@@ -52,13 +56,15 @@ def multi_kwargs(action, kwargs):
                         data += f"""{key} = "{kwargs[key]}" """
                     else:
                         data += f"""{key} = {kwargs[key]}"""
-            if isNotNan:
-                where_value = f"""{kwargs["where_value"]}"""
-            else:
-                where_value = f""""{kwargs["where_value"]}" """
-            i += 1
+                i += 1
+            if key == 'where_value':
+                if isNotNan:
+                    where_value = f"""{kwargs["where_value"]}"""
+                else:
+                    where_value = f""""{kwargs["where_value"]}" """
         return {'data': data, 'where_value': where_value}
     
+    #=============== Formateando argumentos obtenidos INSERT ===============#
     elif action == 'insert':
         campos = ""
         valores = ""
@@ -79,27 +85,22 @@ def multi_kwargs(action, kwargs):
             i += 1
         return campos, valores
     
+    #=============== Formateando argumentos obtenidos SELECT ===============#
     elif action == 'select':
         fields = ""
-        print(kwargs)
         if 'fields' in kwargs:
-            if isNumeric(str(kwargs["where_value"])):
-                for field in kwargs["fields"]:
-                    fields += field
-                where_value = f"""{kwargs["where_value"]}"""
-                return {'fields': fields, 'where_value': where_value}
-            else:
-                for field in kwargs["fields"]:
-                    fields += field
-                where_value = f"""'{kwargs["where_value"]}'"""
-                return {'fields': fields, 'where_value': where_value}
-        else:
-            if isNumeric(str(kwargs["where_value"])):
-                where_value = f"""{kwargs["where_value"]}"""
-                return where_value
-            else:
-                where_value = f"""'{kwargs["where_value"]}'"""
-                return where_value
+            for field in kwargs["fields"]:
+                fields += field
+            if "where" in kwargs and "where_value" in kwargs:
+                for key in kwargs:
+                    if key == "where_value":
+                        if isNumeric(str(kwargs["where_value"])):
+                            where_value = f"""{kwargs["where_value"]}"""
+                            return {'fields': fields, 'where_value': where_value}
+                        else:
+                            where_value = f""""{kwargs["where_value"]}" """
+                            return {'fields': fields, 'where_value': where_value}
+            return fields
          
 def isNumeric(valor):
     if valor.find("."):

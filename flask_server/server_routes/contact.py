@@ -1,3 +1,4 @@
+from dataclasses import fields
 from flask import request, jsonify
 from utilities.functions import json_contact
 from utilities.db_queries import db_queries
@@ -21,13 +22,13 @@ def createContact():
 
 @flask_routes.route('/contacts', methods=['GET'])
 def getContact():
-    data = db_queries('select', 'contacto')
+    data = db_queries('select', 'contacto', fields=['*'])
     res = json_contact(data)
     return jsonify(res)
 
 @flask_routes.route('/contact/<id>', methods=['GET'])
 def getOneContact(id):
-    data = db_queries('select', 'contacto', where='id', where_value=id)
+    data = db_queries('select', 'contacto', where='id', where_value=id, fields=['*'], fetch=0)
     res = json_contact(data)
     return jsonify(res)
 
