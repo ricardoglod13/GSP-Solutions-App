@@ -1,6 +1,4 @@
-from dataclasses import fields
 from flask import request, jsonify
-from flask_cors import CORS
 from utilities.functions import json_product
 from utilities.db_queries import db_queries
 from __init__ import flask_routes

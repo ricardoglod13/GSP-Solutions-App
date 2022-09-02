@@ -12,20 +12,20 @@
     "nombre": "Nataly Glod",
     "telefono": "04168314275",
     "direccion": "Terrazas de Guaicoco",
-    "deuda_favor": 0,
-    "deuda_contra": 0,
+    "credito": 0,
+    "deuda": 0,
     "tipo": "cliente"
 }
 
 {
-    "documento_contacto": "V-6331556",
-    "documento_sucursal": "V-29583472",
+    "deudor": "V-6331556",
+    "acreedor": "V-29583472",
     "pago_inmediato": 0
 }
 
 {
-    "documento_contacto": "V-29583472",
-    "documento_sucursal": "V-6331556",
+    "deudor": "V-29583472",
+    "acreedor": "V-6331556",
     "pago_inmediato": 0
 }
 

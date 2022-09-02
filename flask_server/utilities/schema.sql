@@ -18,8 +18,8 @@ CREATE TABLE contacto (
     nombre VARCHAR(20) NOT NULL,
     telefono VARCHAR(20) NOT NULL,
     direccion TEXT NOT NULL,
-    deuda_favor FLOAT NOT NULL DEFAULT 0.00,
-    deuda_contra FLOAT NOT NULL DEFAULT 0.00,
+    credito FLOAT NOT NULL DEFAULT 0.00,
+    deuda FLOAT NOT NULL DEFAULT 0.00,
     tipo VARCHAR(20) NOT NULL
 );
 
@@ -27,8 +27,8 @@ DROP TABLE IF EXISTS venta;
 
 CREATE TABLE venta (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    documento_contacto VARCHAR(20) NOT NULL,
-    documento_sucursal VARCHAR(20) NOT NULL,
+    deudor VARCHAR(20) NOT NULL,
+    acreedor VARCHAR(20) NOT NULL,
     items TEXT,
     pago_inmediato BOOLEAN NOT NULL,
     cantidad_pagada FLOAT NOT NULL DEFAULT 0.00,
@@ -40,10 +40,11 @@ DROP TABLE IF EXISTS compra;
 
 CREATE TABLE compra (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    documento_sucursal VARCHAR(15) NOT NULL,
-    documento_proveedor VARCHAR(20) NOT NULL,
+    deudor VARCHAR(15) NOT NULL,
+    acreedor VARCHAR(20) NOT NULL,
     items TEXT,
     pago_inmediato BOOLEAN NOT NULL,
+    cantidad_pagada FLOAT NOT NULL DEFAULT 0.00,
     total FLOAT,
     fecha TEXT NOT NULL
 );

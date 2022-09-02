@@ -90,7 +90,10 @@ def multi_kwargs(action, kwargs):
         fields = ""
         if 'fields' in kwargs:
             for field in kwargs["fields"]:
-                fields += field
+                if kwargs['fields'].index(field) < (len(kwargs['fields']) -1):
+                    fields += field + ","
+                else:
+                    fields += field
             if "where" in kwargs and "where_value" in kwargs:
                 for key in kwargs:
                     if key == "where_value":

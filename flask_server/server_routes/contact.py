@@ -1,4 +1,3 @@
-from dataclasses import fields
 from flask import request, jsonify
 from utilities.functions import json_contact
 from utilities.db_queries import db_queries
@@ -14,8 +13,8 @@ def createContact():
         nombre = f"""{contact["nombre"]}""", 
         telefono = f"""{contact["telefono"]}""", 
         direccion = f"""{contact["direccion"]}""", 
-        deuda_contra = contact["deuda_contra"],
-        deuda_favor = contact["deuda_favor"],
+        deuda = contact["deuda"],
+        credito = contact["credito"],
         tipo = f"""{contact["tipo"]}"""
     )
     return 'Contacto Creado'

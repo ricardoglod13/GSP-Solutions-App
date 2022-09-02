@@ -17,11 +17,11 @@ def createPayment():
 
     if (res_origen["total"] - res_origen["cantidad_pagada"]) >= payment["cant_abono"]:
 
-        data = db_queries('select', 'contacto', where='documento', where_value=res_origen["documento_contacto"], fields=['*'], fetch=0)
-        res_contacto = json_contact(data)
+        data = db_queries('select', 'contacto', where='documento', where_value=res_origen["deudor"], fields=['*'], fetch=0)
+        res_deudor = json_contact(data)
 
-        data = db_queries('select', 'contacto', where='documento', where_value=res_origen["documento_sucursal"], fields=['*'], fetch=0)
-        res_sucursal = json_contact(data)
+        data = db_queries('select', 'contacto', where='documento', where_value=res_origen["acreedor"], fields=['*'], fetch=0)
+        res_acreedor = json_contact(data)
 
         #=============== Creando el Pago ===============#
         db_queries('insert', 'pago', 
@@ -31,18 +31,18 @@ def createPayment():
                 fecha = f"""{date.strftime("%Y/%m/%d")}"""
         )
 
-        #=============== Actualizando contacto con la resta de la deuda_contra actual y el pago ===============#
-        deuda_contra_value = res_contacto["deuda_contra"]-payment["cant_abono"]
+        #=============== Actualizando contacto con la resta de la deuda actual y el pago ===============#
+        deuda_value = res_deudor["deuda"]-payment["cant_abono"]
 
-        db_queries('update', 'contacto', where='documento', where_value=res_origen["documento_contacto"],
-                deuda_contra = deuda_contra_value
+        db_queries('update', 'contacto', where='documento', where_value=res_origen["deudor"],
+                deuda = deuda_value
         )
 
-        #=============== Actualizando contacto con la res_origen de la deuda_favor actual y el pago ===============#
-        deuda_favor_value = res_sucursal["deuda_favor"]-payment["cant_abono"]
+        #=============== Actualizando contacto con la res_origen de la credito actual y el pago ===============#
+        credito_value = res_acreedor["credito"]-payment["cant_abono"]
 
-        db_queries('update', 'contacto', where='documento', where_value=res_origen["documento_sucursal"],
-                deuda_favor = deuda_favor_value
+        db_queries('update', 'contacto', where='documento', where_value=res_origen["acreedor"],
+                credito = credito_value
         )
 
         cant_pagada = res_origen["cantidad_pagada"] + payment["cant_abono"]
@@ -76,24 +76,24 @@ def deletePayments(id):
     data = db_queries('select', f"""{payment["origen"]}""", where='id', where_value=payment["id_origen"], fields=['*'], fetch=0)
     res_origen = json_sale(data)
 
-    data = db_queries('select', 'contacto', where='documento', where_value=res_origen["documento_contacto"], fields=['*'], fetch=0)
-    res_contacto = json_contact(data)
+    data = db_queries('select', 'contacto', where='documento', where_value=res_origen["deudor"], fields=['*'], fetch=0)
+    res_deudor = json_contact(data)
 
-    data = db_queries('select', 'contacto', where='documento', where_value=res_origen["documento_sucursal"], fields=['*'], fetch=0)
-    res_sucursal = json_contact(data)
+    data = db_queries('select', 'contacto', where='documento', where_value=res_origen["acreedor"], fields=['*'], fetch=0)
+    res_acreedor = json_contact(data)
 
-    #=============== Actualizando contacto con la resta de la deuda_contra actual y el pago ===============#
-    deuda_contra_value = res_contacto["deuda_contra"]+payment["cant_abono"]
+    #=============== Actualizando contacto con la resta de la deuda actual y el pago ===============#
+    deuda_value = res_deudor["deuda"]+payment["cant_abono"]
 
-    db_queries('update', 'contacto', where='documento', where_value=res_origen["documento_contacto"],
-             deuda_contra = deuda_contra_value
+    db_queries('update', 'contacto', where='documento', where_value=res_origen["deudor"],
+             deuda = deuda_value
     )
 
-    #=============== Actualizando contacto con la res_origen de la deuda_favor actual y el pago ===============#
-    deuda_favor_value = res_sucursal["deuda_favor"]+payment["cant_abono"]
+    #=============== Actualizando contacto con la res_origen de la credito actual y el pago ===============#
+    credito_value = res_acreedor["credito"]+payment["cant_abono"]
 
-    db_queries('update', 'contacto', where='documento', where_value=res_origen["documento_sucursal"],
-            deuda_favor = deuda_favor_value
+    db_queries('update', 'contacto', where='documento', where_value=res_origen["acreedor"],
+            credito = credito_value
     )
 
     cant_pagada = res_origen["cantidad_pagada"]-payment["cant_abono"]
@@ -119,24 +119,24 @@ def updatePayment(id):
 
     if payment["cant_abono"] + (res_origen["cantidad_pagada"] - cant_actual["cant_abono"]) <= res_origen["total"]:
         #=============== Consultando la informacion de contacto ===============#
-        data_contact = db_queries('select', 'contacto', where='documento', where_value=res_origen["documento_contacto"], fields=['*'], fetch=0)
+        data_contact = db_queries('select', 'contacto', where='documento', where_value=res_origen["deudor"], fields=['*'], fetch=0)
         data_contact = json_contact(data_contact)
 
-        data_sucursal = db_queries('select', 'contacto', where='documento', where_value=res_origen["documento_sucursal"], fields=['*'], fetch=0)
-        data_sucursal = json_contact(data_sucursal)
+        data_acreedor = db_queries('select', 'contacto', where='documento', where_value=res_origen["acreedor"], fields=['*'], fetch=0)
+        data_acreedor = json_contact(data_acreedor)
 
         #=============== Esta funcion realizala una operacion dependiendo si cant_actual es menor o mayor que cant_abono ===============#
-        deuda_contra_value = updateAbono(cant_actual["cant_abono"], payment["cant_abono"], data_contact["deuda_contra"])
+        deuda_value = updateAbono(cant_actual["cant_abono"], payment["cant_abono"], data_contact["deuda"])
 
-        deuda_favor_value = updateAbono(cant_actual["cant_abono"], payment["cant_abono"], data_sucursal["deuda_favor"])
+        credito_value = updateAbono(cant_actual["cant_abono"], payment["cant_abono"], data_acreedor["credito"])
 
         #=============== Actualizando contactos ===============#
         db_queries('update', 'contacto', where='id', where_value=data_contact["id"],
-                deuda_contra= deuda_contra_value
+                deuda= deuda_value
         )
 
-        db_queries('update', 'contacto', where='id', where_value=data_sucursal["id"],
-                deuda_favor= deuda_favor_value
+        db_queries('update', 'contacto', where='id', where_value=data_acreedor["id"],
+                credito= credito_value
         )
 
         if cant_actual["cant_abono"] >= payment["cant_abono"]:
