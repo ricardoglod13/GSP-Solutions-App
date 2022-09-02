@@ -9,8 +9,6 @@ from __init__ import flask_routes
 
 @flask_routes.route('/products/template', methods=['GET'])
 def productTemplate():
-    data_query = db_queries('select', 'producto', fields=['*'])
-    products = json_product(data_query)
 
     data = {
             'codigo':[],
@@ -20,11 +18,6 @@ def productTemplate():
             'precio_venta':[],
             'cantidad':[]
         }
-    if products:
-        for dict in products:
-            for key in dict:
-                if key != 'id':
-                    data[key].append(dict[key])
     
     data = pd.DataFrame(data)
     data.to_excel('productsTemplate.xlsx', sheet_name='Productos', engine='openpyxl')
@@ -35,8 +28,6 @@ def productTemplate():
 
 @flask_routes.route('/contacts/template', methods=['GET'])
 def contactTemplate():
-    data_query = db_queries('select', 'contacto', fields=['*'])
-    contacts = json_contact(data_query)
 
     data = {
             'documento':[],
@@ -45,11 +36,6 @@ def contactTemplate():
             'direccion':[],
             'tipo':[]
         }
-    if contacts:
-        for dict in contacts:
-            for key in dict:
-                if key != 'id' and key != 'deuda_contra' and key != 'deuda_favor':
-                    data[key].append(dict[key])
     
     data = pd.DataFrame(data)
     data.to_excel('contactsTemplate.xlsx', sheet_name='Contactos', engine='openpyxl')
