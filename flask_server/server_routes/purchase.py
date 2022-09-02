@@ -11,8 +11,8 @@ def createPurchase():
     purchase = request.json
     date = datetime.datetime.now()
     db_queries('insert', 'compra', 
-        documento_sucursal = f"""{purchase["documento_sucursal"]}""",
-        documento_proveedor = f"""{purchase["documento_proveedor"]}""",
+        deudor = f"""{purchase["deudor"]}""",
+        acreedor = f"""{purchase["acreedor"]}""",
         items = f"""[]""", 
         pago_inmediato = purchase["pago_inmediato"],
         cantidad_pagada = 0,
@@ -81,7 +81,7 @@ def deletePurchase(id):
         for dic in new_data_purchase:
             updateInventory(dic["codigo"], dic['cantidad'], True)
 
-    #=============== Actualizando la deuda_contra ===============#
+    #=============== Actualizando la deuda ===============#
     deleteDeudaCV(id, 'compra')
 
     #=============== Eliminando la compra ===============#
@@ -119,17 +119,17 @@ def updatePurchase(id):
     res = json_purchase(data)
 
     db_queries('update', 'compra', where='id', where_value=id,
-        documento_sucursal = f"""{purchase["documento_sucursal"]}""", 
-        documento_proveedor = f"""{purchase["documento_proveedor"]}""", 
+        deudor = f"""{purchase["deudor"]}""", 
+        acreedor = f"""{purchase["acreedor"]}""", 
         pago_inmediato = purchase["pago_inmediato"]
     )
 
-    if (purchase["documento_sucursal"] != res["documento_sucursal"] 
-        or purchase["documento_proveedor"] != res["documento_proveedor"] 
+    if (purchase["deudor"] != res["deudor"] 
+        or purchase["acreedor"] != res["acreedor"] 
         or purchase["pago_inmediato"] != res["pago_inmediato"]):
 
-        updateDeudaCV('compra', res["documento_sucursal"], res["documento_proveedor"])
-        updateDeudaCV('compra', purchase["documento_sucursal"], purchase["documento_proveedor"])
+        updateDeudaCV('compra', res["deudor"], res["acreedor"])
+        updateDeudaCV('compra', purchase["deudor"], purchase["acreedor"])
 
     return f'Compra #{id} Actualizada'
 
