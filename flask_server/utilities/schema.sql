@@ -23,29 +23,17 @@ CREATE TABLE contacto (
     tipo VARCHAR(20) NOT NULL
 );
 
-DROP TABLE IF EXISTS venta;
+DROP TABLE IF EXISTS transaccion;
 
-CREATE TABLE venta (
+CREATE TABLE transaccion (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    acreedor VARCHAR(20) NOT NULL,
     deudor VARCHAR(20) NOT NULL,
-    acreedor VARCHAR(20) NOT NULL,
     items TEXT,
-    pago_inmediato BOOLEAN NOT NULL,
+    plazo VARCHAR(20) NOT NULL,
     cantidad_pagada FLOAT NOT NULL DEFAULT 0.00,
     total FLOAT,
-    fecha TEXT NOT NULL
-);
-
-DROP TABLE IF EXISTS compra;
-
-CREATE TABLE compra (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    deudor VARCHAR(15) NOT NULL,
-    acreedor VARCHAR(20) NOT NULL,
-    items TEXT,
-    pago_inmediato BOOLEAN NOT NULL,
-    cantidad_pagada FLOAT NOT NULL DEFAULT 0.00,
-    total FLOAT,
+    tipo VARCHAR(20) NOT NULL,
     fecha TEXT NOT NULL
 );
 
@@ -54,7 +42,7 @@ DROP TABLE IF EXISTS pago;
 CREATE TABLE pago (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     id_origen INTEGER NOT NULL,
-    origen VARCHAR(15) NOT NULL,
     cant_abono FLOAT NOT NULL,
+    tipo VARCHAR(15) NOT NULL,
     fecha TEXT NOT NULL
 );

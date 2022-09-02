@@ -1,5 +1,4 @@
 from flask import request, jsonify
-from utilities.functions import json_product
 from utilities.db_queries import db_queries
 from __init__ import flask_routes
 
@@ -21,24 +20,22 @@ def createProduct():
 @flask_routes.route('/products', methods=['GET'])
 def getProduct():
     data = db_queries('select', 'producto', fields=['*'])
-    res = json_product(data)
-    return jsonify(res)
+    return jsonify(data)
 
 @flask_routes.route('/product/<id>', methods=['GET'])
 def getOneProduct(id):
-    data = db_queries('select', 'producto', where='id', where_value=id, fields=['*'], fetch=0)
-    res = json_product(data)
-    return jsonify(res)
+    data = db_queries('select', 'producto', where=['id'], where_value=[id], operators=['='], fields=['*'], fetch=0)
+    return jsonify(data)
 
 @flask_routes.route('/products/<id>', methods=['DELETE'])
 def deleteProduct(id):
-    db_queries('delete', 'producto', where='id', where_value=id)
+    db_queries('delete', 'producto', where=['id'], where_value=[id], operators=['='])
     return 'Producto Eliminado'
 
 @flask_routes.route('/products/<id>', methods=['PUT'])
 def updateProduct(id):
     product = request.json
-    db_queries('update', 'producto', where='id', where_value=id,
+    db_queries('update', 'producto', where=['id'], where_value=[id], operators=['='],
         codigo = f"""{product["codigo"]}""",
         tipo = f"""{product["tipo"]}""",
         descripcion = f"""{product["descripcion"]}""",
