@@ -24,7 +24,7 @@ def createPayment():
         db_queries('insert', 'pago', 
                 id_origen = payment["id_origen"],  
                 cant_abono = payment["cant_abono"],
-                tipo = payment["tipo"], 
+                tipo = f"""{payment["tipo"]}""", 
                 fecha = f"""{date.strftime("%Y/%m/%d")}"""
         )
 
@@ -51,6 +51,30 @@ def createPayment():
         return 'Pago Creado'
     return f'La cantidad pagada debe ser menor o igual a {res_origen["total"]-res_origen["cantidad_pagada"]}' if res_origen["total"]-res_origen["cantidad_pagada"] != 0 else f'La venta ha sido pagada por completo'
 
+@flask_routes.route('/payments/employee/<id>', methods=['POST'])
+def createPaymentsEmployee(id):
+        payment = request.json
+        date = datetime.datetime.now()
+
+        employee_data = db_queries('select', 'empleado', where=['id'], where_value=[id], operators=['='], fields=['*'], fetch=0)
+        
+        if payment['cant_abono'] != employee_data['sueldo'] and payment['tipo'] == 'salario':
+                saldo = (employee_data['sueldo'] - payment['cant_abono']) + employee_data['saldo']
+
+                db_queries('update', 'empleado', where=['id'], where_value=['id'], operators=['='], 
+                        saldo = saldo,
+                        saldo_past = employee_data['saldo']
+                )
+        
+        db_queries('insert', 'pago', where=['id'], where_value=[id], operators=['='],
+                id_empleado = id,
+                cant_abono = payment['cant_abono'],
+                tipo = f"""{payment['cant_abono']}""",
+                fecha = f"""{date.strftime("%Y/%m/%d")}"""
+        )
+
+        return 'Pago de Empleado Creado'
+        
 @flask_routes.route('/payments', methods=['GET'])
 def getPayment():
     data = db_queries('select', 'pago', fields=['*'], fetch=1)
@@ -96,6 +120,27 @@ def deletePayments(id):
     db_queries('delete', 'pago', where=['id'], where_value=[id], operators=['='])
 
     return 'Pago Eliminado'
+
+@flask_routes.route('/payments/employee/<payment_id>', methods=['DELETE'])
+def deletePaymentsEmployee(payment_id):
+
+        payment_data = db_queries('select', 'pago', where=['id'], where_value=[payment_id], operators=['='], fields=['*'], fetch=0)
+
+        employee_data = db_queries('select', 'empleado', where=['id'], where_value=[payment_data['id_empleado']], operators=['='], fields=['*'], fetch=0)
+        
+        saldo = employee_data['saldo_past'] 
+
+        if payment_data['cant_abono'] != employee_data['sueldo'] and payment_data['tipo'] == 'salario':
+                saldo_past = (employee_data['sueldo'] - (payment_data['cant_abono'] + employee_data['saldo'])) + employee_data['saldo_past']
+
+                db_queries('update', 'empleado', where=['id'], where_value=['id'], operators=['='], 
+                        saldo = saldo,
+                        saldo_past = saldo_past
+                )
+        
+        db_queries('delete', 'pago', where=['id'], where_value=[id], operators=['='])
+
+        return 'Pago de Empleado eliminado'
 
 @flask_routes.route('/payments/<id>', methods=['PUT'])
 def updatePayment(id):
@@ -143,3 +188,27 @@ def updatePayment(id):
 
         return 'Pago Actualizado'
     return f'La cantidad pagada no puede ser mayor a {res_origen["total"] - (res_origen["cantidad_pagada"] - cant_actual["cant_abono"])}'
+
+@flask_routes.route('/payments/employee/<payment_id>', methods=['PUT'])
+def updatePaymentsEmployee(payment_id):
+        payment = request.json
+        date = datetime.datetime.now()
+
+        employee_data = db_queries('select', 'empleado', where=['id'], where_value=[payment['id_empleado']], operators=['='], fields=['*'], fetch=0)
+        
+        if payment['cant_abono'] != employee_data['sueldo'] and payment['tipo'] == 'salario':
+                saldo = (employee_data['sueldo'] - payment['cant_abono']) + employee_data['saldo_past']
+                saldo_past = (employee_data['sueldo'] - (payment['cant_abono'] + employee_data['saldo'])) + employee_data['saldo_past']
+
+                db_queries('update', 'empleado', where=['id'], where_value=['id'], operators=['='], 
+                        saldo = saldo,
+                        saldo_past = saldo_past
+                )
+        
+        db_queries('update', 'pago', where=['id'], where_value=[payment_id], operators=['='],
+                cant_abono = payment['cant_abono'],
+                tipo = f"""{payment['cant_abono']}""",
+                fecha = f"""{date.strftime("%Y/%m/%d")}"""
+        )
+
+        return 'Pago de Empleado Actualizado'

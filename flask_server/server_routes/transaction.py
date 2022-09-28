@@ -14,7 +14,7 @@ def createTransaction():
         acreedor = f"""{transaction["acreedor"]}""", 
         deudor = f"""{transaction["deudor"]}""",
         items = f"""[]""", 
-        plazo = transaction["plazo"],
+        plazo = f"""{transaction["plazo"]}""",
         cantidad_pagada = 0,
         total = 0.0,
         tipo = transaction['tipo'],

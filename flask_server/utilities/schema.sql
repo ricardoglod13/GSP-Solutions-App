@@ -14,13 +14,29 @@ DROP TABLE IF EXISTS contacto;
 
 CREATE TABLE contacto (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    documento VARCHAR(15) NOT NULL,
+    documento VARCHAR(15) UNIQUE NOT NULL,
     nombre VARCHAR(20) NOT NULL,
     telefono VARCHAR(20) NOT NULL,
     direccion TEXT NOT NULL,
     credito FLOAT NOT NULL DEFAULT 0.00,
     deuda FLOAT NOT NULL DEFAULT 0.00,
     tipo VARCHAR(20) NOT NULL
+);
+
+DROP TABLE IF EXISTS empleado;
+
+CREATE TABLE empleado (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    documento VARCHAR(15) UNIQUE NOT NULL,
+    nombre VARCHAR(20) NOT NULL,
+    telefono VARCHAR(20) NOT NULL,
+    direccion TEXT NOT NULL,
+    departamento VARCHAR(15) NOT NULL,
+    cargo VARCHAR(15) NOT NULL,
+    saldo FLOAT NOT NULL DEFAULT 0.00,
+    saldo_past FLOAT NOT NULL DEFAULT 0.00,
+    sueldo FLOAT NOT NULL,
+    tipo_pago VARCHAR(20) NOT NULL
 );
 
 DROP TABLE IF EXISTS transaccion;
@@ -41,7 +57,8 @@ DROP TABLE IF EXISTS pago;
 
 CREATE TABLE pago (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    id_origen INTEGER NOT NULL,
+    id_origen INTEGER,
+    id_empleado INTEGER,
     cant_abono FLOAT NOT NULL,
     tipo VARCHAR(15) NOT NULL,
     fecha TEXT NOT NULL
